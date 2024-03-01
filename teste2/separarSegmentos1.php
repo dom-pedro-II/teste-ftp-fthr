@@ -1,6 +1,4 @@
 <?php
-include 'calcularDistancia.php';
-
 // Verifica se o arquivo GPX foi enviado
 if ($_FILES["arquivo_gpx"]["error"] == UPLOAD_ERR_OK) {
     // Lê o conteúdo do arquivo GPX
@@ -166,47 +164,47 @@ if ($_FILES["arquivo_gpx"]["error"] == UPLOAD_ERR_OK) {
         }
     }
 
-    // Variável para armazenar o bloco principal (20 minutos após o quarto bloco)
-    $tempo_init = $tempo_limite;
-    $tempo_limite = strtotime($tempos[0]) + (66 * 60);
-    $bloco_principal = array();
-    foreach ($tempos as $tempo) {
-        if (strtotime($tempo) >= $tempo_init && strtotime($tempo) < $tempo_limite) {
-            $bloco_principal[$tempo] = array(
-                'local' => isset($local[$tempo]) ? $local[$tempo] : array('latitude' => '1', 'longitude' => '1'),
-                'elevacao' => isset($elevacao[$tempo]) ? $elevacao[$tempo] : '1',
-                'power' => isset($power[$tempo]) ? $power[$tempo] : '1',
-                'temp' => isset($temp[$tempo]) ? $temp[$tempo] : '1',
-                'batimento' => isset($batimento[$tempo]) ? $batimento[$tempo] : '1',
-                'cadencia' => isset($cadencia[$tempo]) ? $cadencia[$tempo] : '1',
-            );
-        } elseif (strtotime($tempo) >= $tempo_limite) {
-            break;
-        }
-    }
+     // Variável para armazenar o bloco principal (20 minutos após o quarto bloco)
+     $tempo_init = $tempo_limite;
+     $tempo_limite = strtotime($tempos[0]) + (66 * 60);
+     $bloco_principal = array();
+     foreach ($tempos as $tempo) {
+         if (strtotime($tempo) >= $tempo_init && strtotime($tempo) < $tempo_limite) {
+             $bloco_principal[$tempo] = array(
+                 'local' => isset($local[$tempo]) ? $local[$tempo] : array('latitude' => '1', 'longitude' => '1'),
+                 'elevacao' => isset($elevacao[$tempo]) ? $elevacao[$tempo] : '1',
+                 'power' => isset($power[$tempo]) ? $power[$tempo] : '1',
+                 'temp' => isset($temp[$tempo]) ? $temp[$tempo] : '1',
+                 'batimento' => isset($batimento[$tempo]) ? $batimento[$tempo] : '1',
+                 'cadencia' => isset($cadencia[$tempo]) ? $cadencia[$tempo] : '1',
+             );
+         } elseif (strtotime($tempo) >= $tempo_limite) {
+             break;
+         }
+     }
+  
+   // Variável para armazenar o último bloco (15 minutos após o principal)
+   $tempo_init = $tempo_limite;
+   $tempo_limite = strtotime($tempos[0]) + (81 * 60);
+   $ultimo_bloco = array();
+   foreach ($tempos as $tempo) {
+       if (strtotime($tempo) >= $tempo_init && strtotime($tempo) < $tempo_limite) {
+           $ultimo_bloco[$tempo] = array(
+               'local' => isset($local[$tempo]) ? $local[$tempo] : array('latitude' => '1', 'longitude' => '1'),
+               'elevacao' => isset($elevacao[$tempo]) ? $elevacao[$tempo] : '1',
+               'power' => isset($power[$tempo]) ? $power[$tempo] : '1',
+               'temp' => isset($temp[$tempo]) ? $temp[$tempo] : '1',
+               'batimento' => isset($batimento[$tempo]) ? $batimento[$tempo] : '1',
+               'cadencia' => isset($cadencia[$tempo]) ? $cadencia[$tempo] : '1',
+           );
+       } elseif (strtotime($tempo) >= $tempo_limite) {
+           break;
+       }
+   }
 
-    // Variável para armazenar o último bloco (5 minutos após o bloco principal)
-    $tempo_init = $tempo_limite;
-    $tempo_limite = strtotime($tempos[0]) + (71 * 60);
-    $ultimo_bloco = array();
-    foreach ($tempos as $tempo) {
-        if (strtotime($tempo) >= $tempo_init && strtotime($tempo) < $tempo_limite) {
-            $ultimo_bloco[$tempo] = array(
-                'local' => isset($local[$tempo]) ? $local[$tempo] : array('latitude' => '1', 'longitude' => '1'),
-                'elevacao' => isset($elevacao[$tempo]) ? $elevacao[$tempo] : '1',
-                'power' => isset($power[$tempo]) ? $power[$tempo] : '1',
-                'temp' => isset($temp[$tempo]) ? $temp[$tempo] : '1',
-                'batimento' => isset($batimento[$tempo]) ? $batimento[$tempo] : '1',
-                'cadencia' => isset($cadencia[$tempo]) ? $cadencia[$tempo] : '1',
-            );
-        } elseif (strtotime($tempo) >= $tempo_limite) {
-            break;
-        }
-    }
-
-    // Variável para armazenar o cooldown (10 minutos após o último bloco)
-    $tempo_init = $tempo_limite;
-    $tempo_limite = strtotime($tempos[0]) + (81 * 60);
+   // Variável para armazenar o cooldown (10 minutos finais)
+   $tempo_init = $tempo_limite;
+    $tempo_limite = strtotime($tempos[0]) + (91 * 60);
     $cooldown = array();
     foreach ($tempos as $tempo) {
         if (strtotime($tempo) >= $tempo_init && strtotime($tempo) < $tempo_limite) {
@@ -223,7 +221,7 @@ if ($_FILES["arquivo_gpx"]["error"] == UPLOAD_ERR_OK) {
         }
     }
 
-    // Variável para armazenar o restante
+    // Variável para armazenar o restante do tempo após o cooldown
     $tempo_init = $tempo_limite;
     $restante = array();
     foreach ($tempos as $tempo) {
@@ -239,36 +237,60 @@ if ($_FILES["arquivo_gpx"]["error"] == UPLOAD_ERR_OK) {
         }
     }
 
-    // Escreve os dados em arquivos txt
-    writeToFile("warmup.txt", $warmup);
-    writeToFile("primeiro_bloco.txt", $primeiro_bloco);
-    writeToFile("segundo_bloco.txt", $segundo_bloco);
-    writeToFile("terceiro_bloco.txt", $terceiro_bloco);
-    writeToFile("quarto_bloco.txt", $quarto_bloco);
-    writeToFile("bloco_principal.txt", $bloco_principal);
-    writeToFile("ultimo_bloco.txt", $ultimo_bloco);
-    writeToFile("cooldown.txt", $cooldown);
-    writeToFile("restante.txt", $restante);
+   // Função para escrever informações em arquivo
+   function escrever_arquivo($nome_arquivo, $dados)
+   {
+       $arquivo = fopen($nome_arquivo, "w");
+       foreach ($dados as $index => $info) {
+           fwrite($arquivo, "Tempo[$index]: '$index'\n");
+           fwrite($arquivo, "Local[$index]: " . $info['local']['latitude'] . ", " . $info['local']['longitude'] . "\n");
+           fwrite($arquivo, "Elevação[$index]: " . $info['elevacao'] . "\n");
+           fwrite($arquivo, "Power[$index]: " . $info['power'] . "\n");
+           fwrite($arquivo, "Temperatura[$index]: " . $info['temp'] . "\n");
+           fwrite($arquivo, "Batimento[$index]: " . $info['batimento'] . "\n");
+           fwrite($arquivo, "Cadência[$index]: " . $info['cadencia'] . "\n\n");
+       }
+       fclose($arquivo);
+   }
 
-    foreach ($arquivos_segmentos as $arquivo) {
-        $distancias_segmento = calcularDistanciaSegmento($arquivo);
-    }
+   // Escreve as informações do warmup no arquivo warmup.txt
+   escrever_arquivo("warmup.txt", $warmup);
 
-    foreach ($arquivos_segmentos as $arquivo) {
-        $distancias_segmento = calcularDistanciaSegmento($arquivo);
-    }
+   // Escreve as informações do primeiro bloco no arquivo 1bloco.txt
+   escrever_arquivo("1bloco.txt", $primeiro_bloco);
 
+   // Escreve as informações do segundo bloco no arquivo 2bloco.txt
+   escrever_arquivo("2bloco.txt", $segundo_bloco);
+
+   // Escreve as informações do terceiro bloco no arquivo 3bloco.txt
+   escrever_arquivo("3bloco.txt", $terceiro_bloco);
+
+   // Escreve as informações do quarto bloco no arquivo 4bloco.txt
+   escrever_arquivo("4bloco.txt", $quarto_bloco);
+
+   // Escreve as informações do bloco principal no arquivo bloco_principal.txt
+   escrever_arquivo("bloco_principal.txt", $bloco_principal);
+
+   // Escreve as informações do último bloco no arquivo ultimobloco.txt
+   escrever_arquivo("ultimobloco.txt", $ultimo_bloco);
+
+   // Escreve as informações do cooldown no arquivo cooldown.txt
+   escrever_arquivo("cooldown.txt", $cooldown);
+
+   // Escreve as informações do restante do tempo no arquivo restante.txt
+    escrever_arquivo("restante.txt", $restante);
+
+
+   echo "Informações do warmup salvas em 'warmup.txt'. <a href='warmup.txt'>Baixar warmup</a><br>";
+   echo "Informações do primeiro bloco salvas em '1bloco.txt'. <a href='1bloco.txt'>Baixar 1bloco</a><br>";
+   echo "Informações do segundo bloco salvas em '2bloco.txt'. <a href='2bloco.txt'>Baixar 2bloco</a><br>";
+   echo "Informações do terceiro bloco salvas em '3bloco.txt'. <a href='3bloco.txt'>Baixar 3bloco</a><br>";
+   echo "Informações do quarto bloco salvas em '4bloco.txt'. <a href='4bloco.txt'>Baixar 4bloco</a><br>";
+   echo "Informações do bloco principal salvas em 'bloco_principal.txt'. <a href='bloco_principal.txt'>Baixar bloco principal</a><br>";
+   echo "Informações do último bloco salvas em 'ultimobloco.txt'. <a href='ultimobloco.txt'>Baixar ultimobloco</a><br>";
+   echo "Informações do cooldown salvas em 'cooldown.txt'. <a href='cooldown.txt'>Baixar cooldown</a><br>";
+   echo "Informações do restante do tempo salvas em 'restante.txt'. <a href='restante.txt'>Baixar restante</a><br>";
 
 } else {
-    echo "Erro ao enviar arquivo.";
+   echo "Erro ao fazer upload do arquivo GPX.";
 }
-
-// Função para escrever os dados em um arquivo txt
-function writeToFile($filename, $data)
-{
-    $file = fopen($filename, 'w');
-    fwrite($file, json_encode($data));
-    fclose($file);
-    echo "Arquivo $filename criado com sucesso.";
-}
-?>
